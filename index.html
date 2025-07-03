@@ -3,47 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>メディア投稿サイト</title>
+    <title>✨ MediaShare - 画像・動画投稿サイト</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <header>
-        <h1>メディア投稿サイト</h1>
-        <nav>
-            <ul>
-                <li><a href="#upload">投稿</a></li>
-                <li><a href="#gallery">ギャラリー</a></li>
-            </ul>
-        </nav>
+        <div class="header-content">
+            <h1>✨ MediaShare</h1>
+            <nav>
+                <ul>
+                    <li><a href="#upload">📤 投稿</a></li>
+                    <li><a href="#gallery">🖼️ ギャラリー</a></li>
+                </ul>
+            </nav>
+        </div>
     </header>
 
     <main>
         <section id="upload" class="upload-section">
-            <h2>画像・動画を投稿</h2>
-            <form id="uploadForm">
+            <h2 class="section-title">📤 画像・動画を投稿</h2>
+            <form id="uploadForm" class="upload-form">
                 <div class="file-upload">
-                    <label for="fileInput">ファイルを選択</label>
+                    <label for="fileInput">
+                        📁 ファイルを選択
+                        <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.8;">
+                            画像・動画をドラッグ&ドロップまたはクリック
+                        </div>
+                    </label>
                     <input type="file" id="fileInput" accept="image/*,video/*" multiple>
                 </div>
                 <div class="form-group">
-                    <label for="title">タイトル</label>
-                    <input type="text" id="title" placeholder="タイトルを入力してください">
+                    <label for="title">🏷️ タイトル</label>
+                    <input type="text" id="title" placeholder="素敵なタイトルを入力してください...">
                 </div>
                 <div class="form-group">
-                    <label for="description">説明</label>
-                    <textarea id="description" placeholder="説明を入力してください"></textarea>
+                    <label for="description">📝 説明</label>
+                    <textarea id="description" placeholder="この投稿について説明してください..."></textarea>
                 </div>
-                <button type="submit">投稿する</button>
+                <button type="submit" class="submit-btn">🚀 投稿する</button>
             </form>
         </section>
 
         <section id="gallery" class="gallery-section">
-            <h2>ギャラリー</h2>
+            <h2 class="section-title">🖼️ ギャラリー</h2>
             <div class="filter-buttons">
-                <button class="filter-btn active" data-filter="all">すべて</button>
-                <button class="filter-btn" data-filter="image">画像</button>
-                <button class="filter-btn" data-filter="video">動画</button>
+                <button class="filter-btn active" data-filter="all">🌟 すべて</button>
+                <button class="filter-btn" data-filter="image">📷 画像</button>
+                <button class="filter-btn" data-filter="video">🎥 動画</button>
             </div>
             <div id="mediaGrid" class="media-grid">
                 <!-- 投稿されたメディアがここに表示される -->
