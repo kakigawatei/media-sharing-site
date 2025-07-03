@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メディア投稿サイト</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header>
+        <h1>メディア投稿サイト</h1>
+        <nav>
+            <ul>
+                <li><a href="#upload">投稿</a></li>
+                <li><a href="#gallery">ギャラリー</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="upload" class="upload-section">
+            <h2>画像・動画を投稿</h2>
+            <form id="uploadForm">
+                <div class="file-upload">
+                    <label for="fileInput">ファイルを選択</label>
+                    <input type="file" id="fileInput" accept="image/*,video/*" multiple>
+                </div>
+                <div class="form-group">
+                    <label for="title">タイトル</label>
+                    <input type="text" id="title" placeholder="タイトルを入力してください">
+                </div>
+                <div class="form-group">
+                    <label for="description">説明</label>
+                    <textarea id="description" placeholder="説明を入力してください"></textarea>
+                </div>
+                <button type="submit">投稿する</button>
+            </form>
+        </section>
+
+        <section id="gallery" class="gallery-section">
+            <h2>ギャラリー</h2>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">すべて</button>
+                <button class="filter-btn" data-filter="image">画像</button>
+                <button class="filter-btn" data-filter="video">動画</button>
+            </div>
+            <div id="mediaGrid" class="media-grid">
+                <!-- 投稿されたメディアがここに表示される -->
+            </div>
+        </section>
+    </main>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modalMedia"></div>
+            <div class="modal-info">
+                <h3 id="modalTitle"></h3>
+                <p id="modalDescription"></p>
+                <small id="modalDate"></small>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
