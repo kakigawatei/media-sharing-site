@@ -248,7 +248,7 @@ class MediaSharingApp {
                 <div class="media-info">
                     <div class="media-header">
                         <h3>${this.escapeHtml(item.title)}</h3>
-                        ${this.canDeletePost(item) ? `<button class="delete-btn" data-id="${item.id}" data-user-id="${item.user_id}">🗑️</button>` : ''}
+                        <button class="delete-btn" data-id="${item.id}" data-user-id="${item.user_id || 'anonymous'}">🗑️</button>
                     </div>
                     <p>${this.escapeHtml(item.description || '')}</p>
                     <small>${this.formatDate(item.upload_date)}</small>
@@ -260,7 +260,13 @@ class MediaSharingApp {
     }
 
     canDeletePost(item) {
-        return item.user_id === this.userId;
+        console.log('Checking delete permission:', {
+            itemUserId: item.user_id,
+            currentUserId: this.userId,
+            canDelete: item.user_id === this.userId || !item.user_id
+        });
+        // 投稿者または既存の投稿（user_idがない）は削除可能
+        return item.user_id === this.userId || !item.user_id;
     }
 
     addMediaItemListeners() {
@@ -341,7 +347,7 @@ class MediaSharingApp {
     }
 
     async handleDelete(postId, postUserId) {
-        if (postUserId === this.userId) {
+        if (postUserId === this.userId || !postUserId) {
             if (confirm('この投稿を削除しますか？')) {
                 await this.deletePost(postId);
             }
