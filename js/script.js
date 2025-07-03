@@ -300,8 +300,9 @@ class MediaSharingApp {
             btn.addEventListener('click', (e) => {
                 console.log('削除ボタンクリックイベント発火:', e.target);
                 e.stopPropagation();
-                const postId = e.target.dataset.id;
-                const postUserId = e.target.dataset.userId;
+                e.preventDefault();
+                const postId = e.target.getAttribute('data-id');
+                const postUserId = e.target.getAttribute('data-user-id');
                 console.log('削除対象:', { postId, postUserId });
                 this.handleDelete(postId, postUserId);
             });
