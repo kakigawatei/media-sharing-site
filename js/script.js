@@ -52,9 +52,9 @@ class MediaSharingApp {
         const uploadLabel = document.querySelector('.file-upload label');
         
         if (files.length > 0) {
-            uploadLabel.textContent = `${files.length}個のファイルが選択されました`;
+            uploadLabel.innerHTML = `📁 ${files.length}個のファイルが選択されました<div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.8;">画像・動画をドラッグ&ドロップまたはクリック</div>`;
         } else {
-            uploadLabel.textContent = 'ファイルを選択';
+            uploadLabel.innerHTML = '📁 ファイルを選択<div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.8;">画像・動画をドラッグ&ドロップまたはクリック</div>';
         }
     }
 
@@ -81,7 +81,7 @@ class MediaSharingApp {
         }
 
         submitButton.disabled = true;
-        submitButton.textContent = 'アップロード中...';
+        submitButton.textContent = '🚀 アップロード中...';
 
         try {
             for (const file of files) {
@@ -95,47 +95,18 @@ class MediaSharingApp {
             alert('アップロードが完了しました！');
         } catch (error) {
             console.error('アップロードエラー:', error);
-            
-            // 詳細なエラー情報を表示
-            let errorMessage = 'アップロードに失敗しました。\n\n';
-            if (error.message) {
-                errorMessage += `エラー: ${error.message}\n`;
-            }
-            if (error.details) {
-                errorMessage += `詳細: ${error.details}\n`;
-            }
-            if (error.hint) {
-                errorMessage += `ヒント: ${error.hint}\n`;
-            }
-            
-            // よくあるエラーの対処法を追加
-            if (error.message && error.message.includes('bucket')) {
-                errorMessage += '\n対処法: ストレージバケット「media-uploads」が作成されていない可能性があります。';
-            }
-            if (error.message && error.message.includes('policy')) {
-                errorMessage += '\n対処法: ストレージのポリシー設定が必要です。';
-            }
-            if (error.message && error.message.includes('relation')) {
-                errorMessage += '\n対処法: データベースのテーブル「media_posts」が作成されていない可能性があります。';
-            }
-            
-            alert(errorMessage);
+            alert(`アップロードに失敗しました: ${error.message}`);
         } finally {
             submitButton.disabled = false;
-            submitButton.textContent = '投稿する';
+            submitButton.textContent = '🚀 投稿する';
         }
     }
 
     async processFile(file, title, description) {
-        console.log('処理開始:', file.name, file.type, file.size);
-        
         const fileId = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
         const fileName = `${fileId}.${file.name.split('.').pop()}`;
         
-        console.log('ファイル名:', fileName);
-        
         // ストレージアップロード
-        console.log('ストレージアップロード開始...');
         const { error: uploadError } = await this.supabase.storage
             .from('media-uploads')
             .upload(fileName, file, {
@@ -144,18 +115,13 @@ class MediaSharingApp {
             });
 
         if (uploadError) {
-            console.error('ストレージアップロードエラー:', uploadError);
             throw uploadError;
         }
-        
-        console.log('ストレージアップロード完了');
 
         // 公開URL取得
         const { data: publicUrlData } = this.supabase.storage
             .from('media-uploads')
             .getPublicUrl(fileName);
-
-        console.log('公開URL:', publicUrlData.publicUrl);
 
         const mediaItem = {
             title: title,
@@ -168,8 +134,6 @@ class MediaSharingApp {
             user_id: this.userId
         };
 
-        console.log('データベースに挿入するデータ:', mediaItem);
-
         // データベースに挿入
         const { data: insertData, error: insertError } = await this.supabase
             .from('media_posts')
@@ -177,7 +141,6 @@ class MediaSharingApp {
             .select();
 
         if (insertError) {
-            console.error('データベース挿入エラー:', insertError);
             // アップロードしたファイルを削除
             await this.supabase.storage
                 .from('media-uploads')
@@ -185,7 +148,6 @@ class MediaSharingApp {
             throw insertError;
         }
 
-        console.log('データベース挿入完了:', insertData[0]);
         return insertData[0];
     }
 
@@ -211,7 +173,8 @@ class MediaSharingApp {
 
     resetForm() {
         document.getElementById('uploadForm').reset();
-        document.querySelector('.file-upload label').textContent = 'ファイルを選択';
+        const uploadLabel = document.querySelector('.file-upload label');
+        uploadLabel.innerHTML = '📁 ファイルを選択<div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.8;">画像・動画をドラッグ&ドロップまたはクリック</div>';
     }
 
     handleFilter(e) {
@@ -239,9 +202,7 @@ class MediaSharingApp {
             return;
         }
 
-        const htmlContent = filteredItems.map(item => {
-            console.log('レンダリング中のアイテム:', item);
-            return `
+        mediaGrid.innerHTML = filteredItems.map(item => `
             <div class="media-item" data-id="${item.id}">
                 ${item.media_type === 'image' 
                     ? `<img src="${item.file_url}" alt="${item.title}" loading="lazy">` 
@@ -250,63 +211,86 @@ class MediaSharingApp {
                 <div class="media-info">
                     <div class="media-header">
                         <h3>${this.escapeHtml(item.title)}</h3>
-                        <button class="delete-btn" data-id="${item.id}" data-user-id="${item.user_id || 'anonymous'}" onclick="console.log('直接クリック:', '${item.id}')">🗑️</button>
+                        <button class="delete-btn" onclick="window.app.confirmDelete('${item.id}', '${item.user_id || 'anonymous'}')">🗑️</button>
                     </div>
                     <p>${this.escapeHtml(item.description || '')}</p>
                     <small>${this.formatDate(item.upload_date)}</small>
                 </div>
-            </div>`;
-        }).join('');
-        
-        console.log('生成されたHTML:', htmlContent);
-        mediaGrid.innerHTML = htmlContent;
+            </div>
+        `).join('');
 
         this.addMediaItemListeners();
     }
 
-    canDeletePost(item) {
-        console.log('Checking delete permission:', {
-            itemUserId: item.user_id,
-            currentUserId: this.userId,
-            canDelete: item.user_id === this.userId || !item.user_id
-        });
-        // 投稿者または既存の投稿（user_idがない）は削除可能
-        return item.user_id === this.userId || !item.user_id;
-    }
-
     addMediaItemListeners() {
         const mediaItems = document.querySelectorAll('.media-item');
-        const deleteButtons = document.querySelectorAll('.delete-btn');
-        
-        console.log('イベントリスナー設定:', {
-            mediaItems: mediaItems.length,
-            deleteButtons: deleteButtons.length
-        });
         
         mediaItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                console.log('メディアアイテムクリック:', e.target);
-                if (e.target.classList.contains('delete-btn')) {
-                    console.log('削除ボタンがクリックされました');
-                    return;
+            const img = item.querySelector('img, video');
+            const title = item.querySelector('h3');
+            const description = item.querySelector('p');
+            
+            [img, title, description].forEach(element => {
+                if (element) {
+                    element.addEventListener('click', () => {
+                        const itemId = item.dataset.id;
+                        this.openModal(itemId);
+                    });
+                    element.style.cursor = 'pointer';
                 }
-                const itemId = e.currentTarget.dataset.id;
-                this.openModal(itemId);
             });
         });
+    }
 
-        deleteButtons.forEach((btn, index) => {
-            console.log(`削除ボタン ${index} にイベントリスナー追加:`, btn);
-            btn.addEventListener('click', (e) => {
-                console.log('削除ボタンクリックイベント発火:', e.target);
-                e.stopPropagation();
-                e.preventDefault();
-                const postId = e.target.getAttribute('data-id');
-                const postUserId = e.target.getAttribute('data-user-id');
-                console.log('削除対象:', { postId, postUserId });
-                this.handleDelete(postId, postUserId);
-            });
-        });
+    confirmDelete(postId, postUserId) {
+        if (postUserId === this.userId || postUserId === 'anonymous') {
+            if (confirm('この投稿を削除しますか？')) {
+                this.deletePost(postId);
+            }
+        } else {
+            const password = prompt('管理者パスワードを入力してください:');
+            if (password === '0000') {
+                this.deletePost(postId);
+            } else if (password !== null) {
+                alert('パスワードが正しくありません。');
+            }
+        }
+    }
+
+    async deletePost(postId) {
+        try {
+            const post = this.mediaItems.find(item => item.id === postId);
+            if (!post) {
+                alert('投稿が見つかりません。');
+                return;
+            }
+
+            // ファイル名を取得
+            const fileName = post.file_url.split('/').pop();
+
+            // データベースから削除
+            const { error: dbError } = await this.supabase
+                .from('media_posts')
+                .delete()
+                .eq('id', postId);
+
+            if (dbError) {
+                alert(`削除に失敗しました: ${dbError.message}`);
+                return;
+            }
+
+            // ストレージファイル削除
+            await this.supabase.storage
+                .from('media-uploads')
+                .remove([fileName]);
+
+            alert('投稿が削除されました。');
+            await this.loadMediaFromDatabase();
+            this.renderMediaGrid();
+        } catch (error) {
+            console.error('削除エラー:', error);
+            alert(`削除に失敗しました: ${error.message}`);
+        }
     }
 
     openModal(itemId) {
@@ -361,75 +345,6 @@ class MediaSharingApp {
         div.textContent = text;
         return div.innerHTML;
     }
-
-    async handleDelete(postId, postUserId) {
-        console.log('handleDelete呼び出し:', { postId, postUserId, currentUserId: this.userId });
-        
-        if (postUserId === this.userId || !postUserId) {
-            console.log('投稿者による削除');
-            if (confirm('この投稿を削除しますか？')) {
-                await this.deletePost(postId);
-            }
-        } else {
-            console.log('管理者パスワード削除');
-            this.showPasswordModal(postId);
-        }
-    }
-
-    showPasswordModal(postId) {
-        const password = prompt('管理者パスワードを入力してください:');
-        if (password === '0000') {
-            this.deletePost(postId);
-        } else if (password !== null) {
-            alert('パスワードが正しくありません。');
-        }
-    }
-
-    async deletePost(postId) {
-        try {
-            console.log('削除開始:', postId);
-            const post = this.mediaItems.find(item => item.id === postId);
-            if (!post) {
-                console.error('投稿が見つかりません:', postId);
-                return;
-            }
-
-            console.log('削除する投稿:', post);
-
-            // ストレージファイル削除
-            const fileName = post.file_url.split('/').pop();
-            console.log('削除するファイル名:', fileName);
-            
-            const { error: storageError } = await this.supabase.storage
-                .from('media-uploads')
-                .remove([fileName]);
-
-            if (storageError) {
-                console.warn('ストレージ削除エラー (続行):', storageError);
-            }
-
-            // データベース削除
-            console.log('データベースから削除中...');
-            const { error: dbError } = await this.supabase
-                .from('media_posts')
-                .delete()
-                .eq('id', postId);
-
-            if (dbError) {
-                console.error('データベース削除エラー:', dbError);
-                alert(`削除に失敗しました: ${dbError.message}`);
-                return;
-            }
-
-            console.log('削除成功');
-            alert('投稿が削除されました。');
-            await this.loadMediaFromDatabase();
-            this.renderMediaGrid();
-        } catch (error) {
-            console.error('削除エラー:', error);
-            alert(`削除に失敗しました: ${error.message}`);
-        }
-    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -439,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
-    new MediaSharingApp();
+    window.app = new MediaSharingApp();
 });
 
 window.addEventListener('beforeunload', () => {
