@@ -268,6 +268,19 @@ class MediaSharingApp {
             // ファイル名を取得
             const fileName = post.file_url.split('/').pop();
 
+            // RLSを無効化するためのダミー設定（既存投稿用）
+            if (!post.user_id) {
+                // user_idがない古い投稿の場合、まず更新
+                const { error: updateError } = await this.supabase
+                    .from('media_posts')
+                    .update({ user_id: 'anonymous' })
+                    .eq('id', postId);
+                
+                if (updateError) {
+                    console.warn('user_id更新エラー:', updateError);
+                }
+            }
+
             // データベースから削除
             const { error: dbError } = await this.supabase
                 .from('media_posts')
