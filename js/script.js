@@ -367,32 +367,47 @@ class MediaSharingApp {
 
     async deletePost(postId) {
         try {
+            console.log('削除開始:', postId);
             const post = this.mediaItems.find(item => item.id === postId);
-            if (!post) return;
+            if (!post) {
+                console.error('投稿が見つかりません:', postId);
+                return;
+            }
 
+            console.log('削除する投稿:', post);
+
+            // ストレージファイル削除
             const fileName = post.file_url.split('/').pop();
-
-            await this.supabase.storage
+            console.log('削除するファイル名:', fileName);
+            
+            const { error: storageError } = await this.supabase.storage
                 .from('media-uploads')
                 .remove([fileName]);
 
-            const { error } = await this.supabase
+            if (storageError) {
+                console.warn('ストレージ削除エラー (続行):', storageError);
+            }
+
+            // データベース削除
+            console.log('データベースから削除中...');
+            const { error: dbError } = await this.supabase
                 .from('media_posts')
                 .delete()
                 .eq('id', postId);
 
-            if (error) {
-                console.error('削除エラー:', error);
-                alert('削除に失敗しました。');
+            if (dbError) {
+                console.error('データベース削除エラー:', dbError);
+                alert(`削除に失敗しました: ${dbError.message}`);
                 return;
             }
 
+            console.log('削除成功');
             alert('投稿が削除されました。');
             await this.loadMediaFromDatabase();
             this.renderMediaGrid();
         } catch (error) {
             console.error('削除エラー:', error);
-            alert('削除に失敗しました。');
+            alert(`削除に失敗しました: ${error.message}`);
         }
     }
 }
