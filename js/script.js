@@ -239,7 +239,9 @@ class MediaSharingApp {
             return;
         }
 
-        mediaGrid.innerHTML = filteredItems.map(item => `
+        const htmlContent = filteredItems.map(item => {
+            console.log('レンダリング中のアイテム:', item);
+            return `
             <div class="media-item" data-id="${item.id}">
                 ${item.media_type === 'image' 
                     ? `<img src="${item.file_url}" alt="${item.title}" loading="lazy">` 
@@ -248,13 +250,16 @@ class MediaSharingApp {
                 <div class="media-info">
                     <div class="media-header">
                         <h3>${this.escapeHtml(item.title)}</h3>
-                        <button class="delete-btn" data-id="${item.id}" data-user-id="${item.user_id || 'anonymous'}">🗑️</button>
+                        <button class="delete-btn" data-id="${item.id}" data-user-id="${item.user_id || 'anonymous'}" onclick="console.log('直接クリック:', '${item.id}')">🗑️</button>
                     </div>
                     <p>${this.escapeHtml(item.description || '')}</p>
                     <small>${this.formatDate(item.upload_date)}</small>
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
+        
+        console.log('生成されたHTML:', htmlContent);
+        mediaGrid.innerHTML = htmlContent;
 
         this.addMediaItemListeners();
     }
@@ -273,9 +278,16 @@ class MediaSharingApp {
         const mediaItems = document.querySelectorAll('.media-item');
         const deleteButtons = document.querySelectorAll('.delete-btn');
         
+        console.log('イベントリスナー設定:', {
+            mediaItems: mediaItems.length,
+            deleteButtons: deleteButtons.length
+        });
+        
         mediaItems.forEach(item => {
             item.addEventListener('click', (e) => {
+                console.log('メディアアイテムクリック:', e.target);
                 if (e.target.classList.contains('delete-btn')) {
+                    console.log('削除ボタンがクリックされました');
                     return;
                 }
                 const itemId = e.currentTarget.dataset.id;
@@ -283,11 +295,14 @@ class MediaSharingApp {
             });
         });
 
-        deleteButtons.forEach(btn => {
+        deleteButtons.forEach((btn, index) => {
+            console.log(`削除ボタン ${index} にイベントリスナー追加:`, btn);
             btn.addEventListener('click', (e) => {
+                console.log('削除ボタンクリックイベント発火:', e.target);
                 e.stopPropagation();
                 const postId = e.target.dataset.id;
                 const postUserId = e.target.dataset.userId;
+                console.log('削除対象:', { postId, postUserId });
                 this.handleDelete(postId, postUserId);
             });
         });
@@ -347,11 +362,15 @@ class MediaSharingApp {
     }
 
     async handleDelete(postId, postUserId) {
+        console.log('handleDelete呼び出し:', { postId, postUserId, currentUserId: this.userId });
+        
         if (postUserId === this.userId || !postUserId) {
+            console.log('投稿者による削除');
             if (confirm('この投稿を削除しますか？')) {
                 await this.deletePost(postId);
             }
         } else {
+            console.log('管理者パスワード削除');
             this.showPasswordModal(postId);
         }
     }
