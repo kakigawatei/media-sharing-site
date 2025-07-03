@@ -8,6 +8,7 @@ CREATE TABLE media_posts (
     file_type TEXT NOT NULL,
     file_url TEXT NOT NULL,
     media_type TEXT NOT NULL CHECK (media_type IN ('image', 'video')),
+    user_id TEXT NOT NULL,
     upload_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -23,6 +24,10 @@ CREATE POLICY "Anyone can view media posts" ON media_posts
 -- 全ユーザーが投稿可能
 CREATE POLICY "Anyone can insert media posts" ON media_posts
     FOR INSERT WITH CHECK (true);
+
+-- 投稿者は自分の投稿を削除可能
+CREATE POLICY "Users can delete their own posts" ON media_posts
+    FOR DELETE USING (user_id = current_setting('app.current_user_id', true));
 
 -- ストレージバケットの設定
 INSERT INTO storage.buckets (id, name, public) VALUES ('media-uploads', 'media-uploads', true);

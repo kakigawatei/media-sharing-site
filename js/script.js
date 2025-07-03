@@ -3,7 +3,17 @@ class MediaSharingApp {
         this.mediaItems = [];
         this.currentFilter = 'all';
         this.supabase = window.supabaseClient;
+        this.userId = this.getUserId();
         this.init();
+    }
+
+    getUserId() {
+        let userId = localStorage.getItem('userId');
+        if (!userId) {
+            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('userId', userId);
+        }
+        return userId;
     }
 
     async init() {
@@ -154,7 +164,8 @@ class MediaSharingApp {
             file_size: file.size,
             file_type: file.type,
             file_url: publicUrlData.publicUrl,
-            media_type: file.type.startsWith('image/') ? 'image' : 'video'
+            media_type: file.type.startsWith('image/') ? 'image' : 'video',
+            user_id: this.userId
         };
 
         console.log('データベースに挿入するデータ:', mediaItem);
@@ -235,7 +246,10 @@ class MediaSharingApp {
                     : `<video src="${item.file_url}" controls preload="metadata"></video>`
                 }
                 <div class="media-info">
-                    <h3>${this.escapeHtml(item.title)}</h3>
+                    <div class="media-header">
+                        <h3>${this.escapeHtml(item.title)}</h3>
+                        ${this.canDeletePost(item) ? `<button class="delete-btn" data-id="${item.id}" data-user-id="${item.user_id}">🗑️</button>` : ''}
+                    </div>
                     <p>${this.escapeHtml(item.description || '')}</p>
                     <small>${this.formatDate(item.upload_date)}</small>
                 </div>
@@ -245,12 +259,30 @@ class MediaSharingApp {
         this.addMediaItemListeners();
     }
 
+    canDeletePost(item) {
+        return item.user_id === this.userId;
+    }
+
     addMediaItemListeners() {
         const mediaItems = document.querySelectorAll('.media-item');
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        
         mediaItems.forEach(item => {
             item.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-btn')) {
+                    return;
+                }
                 const itemId = e.currentTarget.dataset.id;
                 this.openModal(itemId);
+            });
+        });
+
+        deleteButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const postId = e.target.dataset.id;
+                const postUserId = e.target.dataset.userId;
+                this.handleDelete(postId, postUserId);
             });
         });
     }
@@ -306,6 +338,56 @@ class MediaSharingApp {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    async handleDelete(postId, postUserId) {
+        if (postUserId === this.userId) {
+            if (confirm('この投稿を削除しますか？')) {
+                await this.deletePost(postId);
+            }
+        } else {
+            this.showPasswordModal(postId);
+        }
+    }
+
+    showPasswordModal(postId) {
+        const password = prompt('管理者パスワードを入力してください:');
+        if (password === '0000') {
+            this.deletePost(postId);
+        } else if (password !== null) {
+            alert('パスワードが正しくありません。');
+        }
+    }
+
+    async deletePost(postId) {
+        try {
+            const post = this.mediaItems.find(item => item.id === postId);
+            if (!post) return;
+
+            const fileName = post.file_url.split('/').pop();
+
+            await this.supabase.storage
+                .from('media-uploads')
+                .remove([fileName]);
+
+            const { error } = await this.supabase
+                .from('media_posts')
+                .delete()
+                .eq('id', postId);
+
+            if (error) {
+                console.error('削除エラー:', error);
+                alert('削除に失敗しました。');
+                return;
+            }
+
+            alert('投稿が削除されました。');
+            await this.loadMediaFromDatabase();
+            this.renderMediaGrid();
+        } catch (error) {
+            console.error('削除エラー:', error);
+            alert('削除に失敗しました。');
+        }
     }
 }
 
